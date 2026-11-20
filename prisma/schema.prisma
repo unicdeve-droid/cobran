@@ -1,0 +1,137 @@
+// Schema do banco de dados - Sistema de Cobranças (MVP)
+// Rodar `npx prisma migrate dev` depois de configurar o DATABASE_URL no .env
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL_UNPOOLED")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Administrador do painel (/xcexm2r4oq4tfzm7rf5222)
+model Admin {
+  id       String   @id @default(cuid())
+  email    String   @unique
+  senha    String
+  criadoEm DateTime @default(now())
+}
+
+// Uma "Cobranca" representa um link único enviado a uma empresa devedora
+// (cliente assinante que está inadimplente). Cada link tem seu próprio UUID.
+model Cobranca {
+  id     String @id @default(cuid())
+  numero Int    @unique @default(autoincrement())
+  uuid   String @unique @default(uuid())
+
+  // Dados da empresa devedora (aparecem na Página 1)
+  razaoSocial  String
+  cnpj         String
+  dataAbertura DateTime?
+  cep          String?
+
+  // Dados do titular / responsável pela empresa devedora
+  nomeCompleto   String
+  cpf            String?
+  dataNascimento DateTime?
+
+  // Contato — uso interno (disparo de mensagens futuramente). O telefone
+  // também aparece publicamente na Página 1, em "Dados do titular".
+  email    String?
+  telefone String?
+
+  // Toggles de visibilidade por campo (Página 1)
+  mostrarRazaoSocial    Boolean @default(true)
+  mostrarCnpj           Boolean @default(true)
+  mostrarDataAbertura   Boolean @default(true)
+  mostrarCep            Boolean @default(true)
+  mostrarNomeCompleto   Boolean @default(true)
+  mostrarCpf            Boolean @default(true)
+  mostrarDataNascimento Boolean @default(true)
+
+  // Dados de pagamento (fatura) - inseridos manualmente pelo admin no MVP
+  qrCodeUrl     String?
+  pixCopiaECola String? @db.Text
+
+  // Boleto em PDF específico desta cobrança, usado no fluxo "Emitir guia"
+  boletoUrl String?
+
+  ativo Boolean @default(true)
+
+  dividas Divida[]
+  meiLead MeiLead?
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@index([uuid])
+}
+
+// Cada dívida individual dentro de uma cobrança (pode haver várias por mês/ano)
+model Divida {
+  id         String   @id @default(cuid())
+  cobrancaId String
+  cobranca   Cobranca @relation(fields: [cobrancaId], references: [id], onDelete: Cascade)
+
+  mes    Int // 1-12
+  ano    Int
+  valor  Decimal @db.Decimal(10, 2)
+  status String  @default("aberto") // "aberto" | "pago"
+
+  criadoEm DateTime @default(now())
+
+  @@index([cobrancaId])
+}
+
+// Textos e configurações globais editáveis pelo painel (aba Configurações)
+model Configuracao {
+  id    String @id @default(cuid())
+  chave String @unique
+  valor String @db.Text
+}
+
+// Lead de MEI importado via CSV (base de prospecção, sem relação com Cobranca)
+model MeiLead {
+  id              String    @id @default(cuid())
+  numero          Int       @unique @default(autoincrement())
+  nome            String
+  cnpj            String    @unique
+  cpf             String?
+  telefone        String?
+  email           String?
+  dataAbertura    DateTime?
+  cep             String?
+  uf              String
+  municipioCodigo String
+  cnae            String?
+  modulo          String
+
+  // Preenchido quando uma Cobrança é gerada em lote a partir deste lead.
+  // Evita gerar cobrança duplicada pro mesmo lead.
+  cobrancaId String?   @unique
+  cobranca   Cobranca? @relation(fields: [cobrancaId], references: [id])
+
+  criadoEm DateTime @default(now())
+
+  @@index([numero])
+  @@index([uf])
+  @@index([municipioCodigo])
+  @@index([modulo])
+  @@index([cnae])
+  @@index([dataAbertura])
+  @@index([nome])
+}
+
+// Tabela de conversão código de município (interno da Receita) -> nome.
+// Começa vazia; é populada quando o arquivo oficial da Receita for importado.
+// Enquanto não houver linha correspondente, a interface mostra o código cru.
+model Municipio {
+  codigo String
+  uf     String
+  nome   String
+
+  @@id([codigo, uf])
+}
+

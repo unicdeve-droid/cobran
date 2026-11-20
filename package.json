@@ -1,0 +1,43 @@
+{
+  "name": "cobranca-mvp",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "postinstall": "prisma generate"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.mjs"
+  },
+  "dependencies": {
+    "@imagekit/nodejs": "^7.12.1",
+    "@prisma/client": "5.20.0",
+    "adm-zip": "^0.5.16",
+    "bcryptjs": "2.4.3",
+    "clsx": "2.1.1",
+    "jose": "5.9.6",
+    "lucide-react": "0.446.0",
+    "next": "14.2.35",
+    "papaparse": "^5.4.1",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "@types/adm-zip": "^0.5.7",
+    "@types/bcryptjs": "2.4.6",
+    "@types/node": "20.16.10",
+    "@types/papaparse": "^5.3.14",
+    "@types/react": "18.3.10",
+    "@types/react-dom": "18.3.0",
+    "autoprefixer": "10.4.20",
+    "eslint": "8.57.1",
+    "eslint-config-next": "14.2.35",
+    "postcss": "8.4.47",
+    "prisma": "5.20.0",
+    "tailwindcss": "3.4.13",
+    "typescript": "5.6.2"
+  }
+}
